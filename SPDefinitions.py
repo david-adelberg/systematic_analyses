@@ -18,7 +18,7 @@ __maintainer__ = "David Adelberg"
 __email__ = "david.adelberg@yale.edu"
 __status__ = "Development"
 
-from systematic_investment import identity, Info, reg_create_func
+from systematic_investment import *
 from utils import *
 
 def make_sp_col_handler():
@@ -74,7 +74,7 @@ def get_sp500_info():
     return(sp_info)
     
 from systematic_investment import test_data_processing, test_models
-from LongShortTradingModel import LongShortTradingModel
+from systematic_investment import LongShortTradingModel
 import statsmodels.api as sm              
  
 def sp_model_test_action(model):

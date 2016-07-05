@@ -18,7 +18,7 @@ __maintainer__ = "David Adelberg"
 __email__ = "david.adelberg@yale.edu"
 __status__ = "Development"
 
-from systematic_investment import DFAnalyzer, Info
+from systematic_investment import *
 from fx_trading_defs_aux import *
     
 def get_fx_info():

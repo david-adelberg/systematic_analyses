@@ -22,7 +22,7 @@ __status__ = "Prototype"
 
 from systematic_investment import *
 from utils import *
-from pandas import DataFrame
+from pandas import DataFrame, Timestamp
 
 def load_SF0_qd_codes():
     return(fix_read_excel('SF0-datasets-codes.xls')[['Name', 'Code']])

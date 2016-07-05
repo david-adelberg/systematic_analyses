@@ -19,6 +19,7 @@ __email__ = "david.adelberg@yale.edu"
 __status__ = "Development"
 
 from utils import *
+from systematic_investment import default_indicator_loader, fix_read_excel
 
 from pandas import DataFrame, concat
     
