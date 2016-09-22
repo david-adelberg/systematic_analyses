@@ -22,8 +22,6 @@ Created on Sun Jun 26 09:04:04 2016
 
 @author: davidadelberg
 """
-from pandas import read_excel
-from math import isnan
 
 sam_authtoken = "yT-GSBApsSeU5xT4AD9Y"
 david_authtoken = 'LJ3oEd-suo-8p4o4542_'

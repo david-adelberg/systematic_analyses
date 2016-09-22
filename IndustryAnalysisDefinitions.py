@@ -20,7 +20,8 @@ __maintainer__ = "David Adelberg"
 __email__ = "david.adelberg@yale.edu"
 __status__ = "Prototype"
 
-from shortcuts import identity, reg_create_func
+import systematic_investments as si
+from si.shortcuts import *
 import DBSymbol
 
 def get_industry_analysis_info():

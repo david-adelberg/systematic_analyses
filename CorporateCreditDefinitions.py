@@ -20,7 +20,9 @@ __maintainer__ = "David Adelberg"
 __email__ = "david.adelberg@yale.edu"
 __status__ = "Prototype"
 
-from systematic_investment import Info, identity, reg_create_func
+import systematic_investment as si
+from si.shortcuts import *
+from pandas import DataFrame
 from utils import *
 import statsmodels.api as sm
 
@@ -38,6 +40,22 @@ cc_indicator_to_percentages = ['Emerging Markets Corporate Bond Total Return Ind
              'US Corporate BBB Total Return Index',
              'US Corporate Bond A Total Return Index',
              'US Corporate Bonds Total Return Index']
+             
+cc_drop = ["Emerging Markets Corporate Bond Index OAS",
+           "Emerging Markets High Grade Corporate Bond Index Yield",
+           "Euro Emerging Markets Corporate Bond Index (Yield)",
+           "US AA Bond Index Yield",
+           "US AA-rated Bond Index OAS",
+           "US AAA rated Bond Index (yield)",
+           "US B rated Corporate Bond Index (yield)",
+           "US B-rated Bond Index OAS",
+           "US BBB Bond Index (yield)",
+           "US CCC-rated Bond Index Yield",
+           "US Corporate Bond A rated Index (yield)",
+           "US Corporate Bond Index Yield",
+           "US High Yield BB Corporate Bond Index Yield",
+           "US High Yield Corporate Bond Index (Yield)",
+           "US High Yield Corporate Bond Index OAS"]
 
 def make_ML_col_handler():
     codes = load_ML_qd_codes()
@@ -51,7 +69,8 @@ def ml_analyzer_creator(info):
     def func():
         res = reg_create_func(info, drop_observations=False)()
         
-        res._to_analyze.drop([('ML', val) for val in cc_indicator_to_percentages], axis=1)
+        res._to_analyze.drop([('ML', val) for val in cc_indicator_to_percentages], axis=1, inplace=True)
+        res._to_analyze.drop([('ML', val) for val in cc_drop], axis=1, inplace=True)
         return(res)
     return(func)
 
@@ -69,8 +88,10 @@ def get_cc_info():
         set(symbol_name='ML', date_name='Date'). \
         set_path('downloaded_data', 'ML_data.csv')
         
+    cc_to_drop = [("ML", "US Corporate BBB Total Return Index"), ("ML", "US Corporate Bonds Total Return Index")]
+        
     cc_info.set_path('combined_df', 'combined_cc_data.csv'). \
-        combined_df.set(labels=['Date'], to_drop=[],
+        combined_df.set(labels=['Date'], to_drop=cc_to_drop,
                         names=['DB', 'Indicator'], transformer=identity).up(). \
         set_path('analyzer', 'cc_model.pickle', load=False). \
         create_analyzer(creator=ml_analyzer_creator).set(y_key=[('ML', 'Future Percent change in %s' % name)
@@ -84,6 +105,7 @@ from systematic_investment import LongShortTradingModel
 
 def cc_model_test_action(model):
     model.analyzer.print_analysis_results()
+    model.analyzer.plot_analysis_results()
     #model.plot_hypothetical_portfolio()
     
 class MultiTaskLassoInterop:
@@ -110,7 +132,6 @@ class MultiTaskLassoInterop:
         self._obj.__setattr__('summary', self.summary)
         return(self._obj)
         
-    
 if __name__ == '__main__':
     info = get_cc_info()
     test_data_processing(info)

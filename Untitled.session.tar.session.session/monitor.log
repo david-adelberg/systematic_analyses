@@ -1,0 +1,336 @@
+======================================
+Logging time: Mon May 30 11:24:56 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''indicator_codes')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''indicator_codes')
+                                ^
+SyntaxError: invalid syntax
+
+
+======================================
+Logging time: Tue May 31 16:56:01 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''all_world_bank_codes')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''all_world_bank_codes')
+                                     ^
+SyntaxError: invalid syntax
+
+
+======================================
+Logging time: Tue May 31 17:20:14 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''all_cftc_codes')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''all_cftc_codes')
+                               ^
+SyntaxError: invalid syntax
+
+
+======================================
+Logging time: Wed Jun  1 11:32:32 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''cftc_data')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''cftc_data')
+                          ^
+SyntaxError: invalid syntax
+
+
+======================================
+Logging time: Fri Jun  3 11:15:56 2016
+======================================
+
+Context
+-------
+
+__iscallable__('(rank)'].bool)')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __iscallable__('(rank)'].bool)')
+                           ^
+SyntaxError: invalid syntax
+
+
+======================================
+Logging time: Sat Jun  4 11:06:40 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''wb_data')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''wb_data')
+                        ^
+SyntaxError: invalid syntax
+
+
+======================================
+Logging time: Thu Jun  9 10:02:07 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''')
+                   ^
+SyntaxError: EOF while scanning triple-quoted string literal
+
+
+======================================
+Logging time: Thu Jun  9 17:28:51 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''iso_currency_codes')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''iso_currency_codes')
+                                   ^
+SyntaxError: invalid syntax
+
+
+======================================
+Logging time: Thu Jun  9 18:41:03 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''CURRFX'')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''CURRFX'')
+                       ^
+SyntaxError: invalid syntax
+
+
+======================================
+Logging time: Thu Jun  9 18:41:04 2016
+======================================
+
+Context
+-------
+
+__iscallable__(''CURRFX'.split')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __iscallable__(''CURRFX'.split')
+                          ^
+SyntaxError: invalid syntax
+
+
+======================================
+Logging time: Fri Jul  1 09:30:56 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''')
+                   ^
+SyntaxError: EOF while scanning triple-quoted string literal
+
+
+======================================
+Logging time: Fri Jul  1 09:30:56 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''.')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''.')
+                    ^
+SyntaxError: EOL while scanning string literal
+
+
+======================================
+Logging time: Fri Jul  1 09:30:56 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''.')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''.')
+                    ^
+SyntaxError: EOL while scanning string literal
+
+
+======================================
+Logging time: Fri Jul  1 09:31:51 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''utils')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''utils')
+                      ^
+SyntaxError: invalid syntax
+
+
+======================================
+Logging time: Fri Jul  1 09:31:56 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''utils')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''utils')
+                      ^
+SyntaxError: invalid syntax
+
+
+======================================
+Logging time: Fri Jul  1 09:32:05 2016
+======================================
+
+Context
+-------
+
+__get_dir__(''utils')
+
+Traceback
+---------
+
+Traceback (most recent call last):
+  File "/Users/davidadelberg/anaconda/lib/python3.5/site-packages/spyderlib/widgets/externalshell/monitor.py", line 548, in run
+    result = eval(command, glbs, lcls)
+  File "<string>", line 1
+    __get_dir__(''utils')
+                      ^
+SyntaxError: invalid syntax
+
+

@@ -20,102 +20,69 @@ __maintainer__ = "David Adelberg"
 __email__ = "david.adelberg@yale.edu"
 __status__ = "Prototype"
 
-from systematic_investment import *
-from utils import *
-from pandas import DataFrame, Timestamp
-
-def load_SF0_qd_codes():
-    return(fix_read_excel('SF0-datasets-codes.xls')[['Name', 'Code']])
-
-def make_SF0_compute_names():
-    codes = load_SF0_qd_codes()
-    def res(col_name):
-        qd_code = col_name.split(' - ')[0].replace('.', '/')
-        name = codes.loc[codes['Code']==qd_code]['Name'].iloc[0]
-        return('SF0 - %s' % name)
-    return(res)
-    
-def equity_creator(info):
-    def res():
-        return(QuandlBulkDBLoader())
-    return(res)
-    
-def make_SF0_col_handler():
-    indicators = fix_read_excel('SF0-indicators.xls')[['Code', 'Name']]
-    indicators.set_index('Code', inplace=True)
-    indicators.sort_index(inplace=True)
-    
-    tickers = read_csv('data/SF0-tickers.csv')[['Ticker', 'Name']]
-    tickers.set_index('Ticker', inplace=True)
-    tickers.sort_index(inplace=True)
-    
-    def res(col_name):
-        tick, fld = col_name.split('_')[0:2]
-        sec = None
-        ind = None
-        try:
-            sec = tickers.loc[tick]['Name']
-            ind = indicators.loc[fld]['Name']
-        except:
-            sec = tick
-            ind = fld
+from equity_definitions_aux import *
+from systematic_investment.models import Info
         
-        return(sec + " - " + ind)
+def create_analyzer_filterer(to_keep_func):
+    def filter_analyzer(analyzer):
+        goods = []
+        analyzer._to_analyze = analyzer._to_analyze.T
+        for col in analyzer._to_analyze:
+            goods.append(col.apply(to_keep_func))
+        
+        analyzer._to_analyze = analyzer._to_analyze.T
+        analyzer._to_analyze = analyzer._to_analyze.loc[goods]
+        return(analyzer)
+    return(filter_analyzer)
     
-    return(res)
+industry_table = read_csv("data/SF0-tickers.csv")
     
-#def make_SF0_col_handler():
-#    codes = load_SF0_qd_codes()
-#    codes.set_index('Code', inplace=True)
-#    codes.sort_index(inplace=True)
-#    def res(col_name):
-#        qd_code = 'SF0/%s' % col_name
-#        try:
-#            name = codes.loc[qd_code]['Name']
-#        except:
-#            name = "%s: %s" % (qd_code, "Missing")
-#        return(name)
-#    return(res)
+def make_equity_filter(industry=None, sector=None):
+    def equity_filter(col):
+        ticker = col.name[1]
+        row = industry_table[ticker]
+        if (industry is None or row['Industry'] == industry) and (sector is None or row['Sector'] == sector):
+            return(True)
+        else:
+            return(False)
+    return(equity_filter)
     
-def make_yahoo_col_handler():
-    codes = read_csv('data/SF0-tickers.csv')[['Ticker', 'Name']]
-    codes.set_index('Ticker', inplace=True)
-    codes.sort_index(inplace=True)
-    def res(col_name):
-        code, ind = col_name.split('.')[1].split(' - ')
-        name = None
-        try:
-            name = codes.loc[code]['Name']
-        except:
-            name = code + ": Missing"
-        return('%s - %s' % (name, ind))
-    return(res)
+def equity_analyzer_creator(info, filter_func=identity):
+    def func():
+        res = reg_create_func(info)() #constructor=sm.api.GLM
+        res = filter_func(res)
+        
+        res.add_transformation(smart_divide, ('SF0', 'Earnings per Basic Share (USD)'), ('YAHOO', 'Adjusted Close'), name=('CALC', 'E/P'), drop_old=False)
+        res.add_transformation(smart_divide, ('SF0', 'Book Value per Share'), ('YAHOO', 'Adjusted Close'), name=('CALC', 'B/P'), drop_old=False)
+        res.add_transformation(smart_divide, ('SF0', 'Inventory'), ('SF0', 'Total Assets'), name=('CALC', 'Inventory/Assets'), drop_old=False)
+        res.add_transformation(smart_divide, ('SF0', 'Research and Development Expense'), ('SF0', 'Revenues (USD)'), name=('CALC', 'R&D Intensity Ratio'), drop_old=False)
+        res.add_transformation(smart_divide, ('SF0', 'Capital Expenditure'), ('SF0', 'Total Assets'), name=('CALC', 'Capital Intensity Ratio'), drop_old=False)
+        res.add_transformation(smart_divide, ('SF0', 'Issuance (Purchase) of Equity Shares'), ('SF0', 'Revenues (USD)'), name=('CALC', 'Share Issuance/Revenues'), drop_old=False)
+        res.add_transformation(lambda x,y,z: smart_divide(x-y, z), ('SF0', 'Net Income'), ('SF0', 'Payment of Dividends & Other Cash Distributions'), ('SF0', 'Invested Capital'), name=('CALC', 'ROIC'), drop_old=False)
+        #Doing this differently: res.add_transformation(identity, ('INDUSTRY', 'Sector'), name=('CALC', 'Sector'), drop_old=False)        
+        
+        #res.add_transformation(log, ('SF0', 'Revenues (USD)'), name=('CALC', 'size'), drop_old=False)
+        #res.add_transformation(identity, ('SF0', 'Current Ratio'), name=('CALC', 'Current Ratio'), drop_old=False)
+        #res.add_transformation(identity, ('SF0', 'Debt to Equity Ratio'), name=('CALC', 'Debt to Equity Ratio'), drop_old=False)        
+        #res.add_transformation(smart_divide, ('SF0', 'Gross Profit'), ('SF0', 'Revenues (USD)'), name=('CALC', 'Gross Margin'), drop_old=False)
+        #res.add_transformation(smart_divide, ('SF0', 'Payment of Dividends & Other Cash Distributions'), ('SF0', 'Net Income Common Stock'), name=('CALC', 'Dividend Payout Ratio'), drop_old=False)
+        
+        res.add_transformation(identity, ('YAHOO', 'Future Percent change in Adjusted Close'), name=('CALC', 'Future Percent Change in Adjusted Close'), drop_old=False)
+        res._to_analyze = res._to_analyze[['CALC']]
+        res.add_transformation(identity, ('CALC', 'Future Percent Change in Adjusted Close'), name=('YAHOO', 'Future Percent change in Adjusted Close'), drop_old=True)
+        return(res)
+    return(func)
     
-def equity_english_to_symbol_indicator(english):
-    sp = None
-    if ': Missing' in english:
-        sp = english.split(': ')
-    else:
-        sp = english.split(' - ')
-    symbol = sp[0]
-    ind = sp[1]
-    return symbol, ind
-    
-def load_yahoo_codes():
-    all_yahoo_codes = read_csv('data/yahoo_codes.csv')['Code']
-    all_sf0_codes = read_csv('data/SF0-tickers.csv')['Ticker']
-    all_sf0_codes = 'YAHOO/'+all_sf0_codes
-    res = list(set(all_yahoo_codes).intersection(set(all_sf0_codes)))
-    res = DataFrame(res)
-    res.columns=['Code']
-    return(res)
-    
-def equity_transformer(df):
-    res = df.dropna(how='all')
-    is_good = [Timestamp(idx[0]) < Timestamp('2016-01-01') for idx in res.index.tolist()]
-    res = res.loc[is_good]
-    res = default_multi_index_resample_method(res)
-    return(res)
+def equity_combine_func(transformed_dfs):
+    #indus = transformed_dfs["INDUSTRY"]
+    #del transformed_dfs["INDUSTRY"]
+    combined = default_combine_func(transformed_dfs)
+    combined.drop_duplicates(inplace=True)
+    #ncol = indus.loc[combined.index.map(lambda x: x[1])]['Sector']
+    #ncol.index=combined.index
+    #combined['INDUSTRY', 'Sector'] = ncol
+    #combined.drop_duplicates(inplace=True)
+    return(combined)
 
 def get_equity_info():
     equity_info = Info(data_dir=data_dir, authtoken=david_authtoken, main_db_name='YAHOO')
@@ -142,30 +109,41 @@ def get_equity_info():
         set_path('downloaded_data', 'YAHOO-data.csv'). \
         compute_wanted_codes.set(data=load_yahoo_codes()).up(). \
         downloader().set(code_builder=identity, name_builder=identity). \
-        set(english_to_symbol_indicator=default_english_to_symbol_indicator, indicator_handler=make_default_indicator_handler([],['Adjusted Close'])). \
+        set(english_to_symbol_indicator=default_english_to_symbol_indicator, indicator_handler=make_default_indicator_handler(['Adjusted Close'],['Adjusted Close'])). \
         set_path('process', 'YAHOO_processed_data.csv',
                  compute_names=make_default_compute_names([], make_yahoo_col_handler()),
                   load=True). \
         set(symbol_name='Security', date_name='Date')
     
     equity_info.set_path('combined_df', 'combined_equity_data.csv'). \
-        combined_df.set(labels=['Date'], to_drop=[],names=['DB', 'Indicator'], transformer=equity_transformer).up(). \
+        combined_df.set(labels=['Date'], to_drop=[],names=['DB', 'Indicator'], min_date=to_datetime('2010-01-01'), transformer=equity_transformer, combine_func=equity_combine_func).up(). \
         set_path('analyzer', 'equity_model.pickle', load=False). \
-        create_analyzer().set(y_key=('YAHOO', "Future Percent change in Adjusted Close"))
+        create_analyzer(equity_analyzer_creator).set(y_key=('YAHOO', "Future Percent change in Adjusted Close"))
+#"""
+#    sectors = set(industry_table['Sector']).tolist()
+#    analyzer_creators = []
+#    for sector in sectors:
+#        equity_filter = make_equity_filter(industry=None, sector=sector)
+#        filter_analyzer = create_analyzer_filterer(equity_filter)
+#        analyzer_creator = lambda info: equity_analyzer_creator(info, filter_analyzer)
+#        equity_info.create_analyzer(analyzer_creator).set(y_key=('YAHOO', 'Future Percent change in Adjusted Close'))        
+#        
+#"""
         
     return(equity_info)
     
-from systematic_investment import LongShortTradingModel, test_data_processing, test_models
+from systematic_investment.models import LongShortTradingModel
     
 def equity_model_test_action(model):
-    #model.analyzer.print_analysis_results()
-    model.analyzer.plot_analysis_results()
+    #model.print_tear_sheet() Would need to download daily data to do this
+    model.analyzer.print_analysis_results()
+    #model.analyzer.plot_analysis_results()
     #model.analyzer.make_univariate_plots()
     #model.plot_historic_returns()
-    #model.plot_hypothetical_portfolio()
+    model.plot_hypothetical_portfolio()
     
 if __name__ == '__main__': 
     info = get_equity_info()
     test_data_processing(info)
-    test_models(info, equity_model_test_action, LongShortTradingModel)
+    test_models(info, equity_model_test_action, lambda info: LongShortTradingModel(info, split_date='2013-01-01'))
     print("done")

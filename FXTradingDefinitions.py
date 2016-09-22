@@ -18,7 +18,7 @@ __maintainer__ = "David Adelberg"
 __email__ = "david.adelberg@yale.edu"
 __status__ = "Development"
 
-from systematic_investment import *
+from systematic_investment.shortcuts import *
 from fx_trading_defs_aux import *
     
 def get_fx_info():
@@ -97,6 +97,8 @@ def get_fx_info():
     fx_info.set_path('combined_df', 'combined_fx_data.csv'). \
             combined_df.set(labels=['Date', 'Country'], to_drop=to_drop, transformer=combined_df_transformer). \
                         set(names=['DB', 'Indicator']). \
+                        set(min_date='1900-01-01'). \
+                        set(combine_func=default_combine_func). \
                         up(). \
             set_path('analyzer', 'fx_model.pickle', load=False). \
             create_analyzer(). \
@@ -104,14 +106,13 @@ def get_fx_info():
     
     return(fx_info)
 
-
-from systematic_investment import test_data_processing, test_models
-from systematic_investment import LongOnlyTradingModel, ShortOnlyTradingModel
+from systematic_investment.models import LongOnlyTradingModel, ShortOnlyTradingModel
     
 def fx_model_test_action(model):
     #model.boxplots_by('Country')
     #model.boxplots_by('Date')
     #model.plot_historic_returns()
+    model.analyzer.print_analysis_results()
     model.plot_hypothetical_portfolio()
     
 if __name__ == '__main__':

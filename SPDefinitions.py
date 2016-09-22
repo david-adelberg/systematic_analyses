@@ -18,7 +18,8 @@ __maintainer__ = "David Adelberg"
 __email__ = "david.adelberg@yale.edu"
 __status__ = "Development"
 
-from systematic_investment import *
+from systematic_investment.shortcuts import *
+from systematic_investment.models import Info
 from utils import *
 
 def make_sp_col_handler():
@@ -67,14 +68,21 @@ def get_sp500_info():
         set_path('downloaded_data', 'yale_data.csv')
     
     sp_info.set_path('combined_df', "combined_sp500_data.csv"). \
-        combined_df.set(labels= ['Date'], to_drop=['Dividend', 'Real Dividend', 'Real Earnings', 'Real Price'], names=["DB", "Indicator"], transformer=identity).up(). \
+        combined_df.set(labels= ['Date'],
+                        to_drop=['Dividend',
+                                 'Real Dividend',
+                                 'Real Earnings',
+                                 'Real Price'], 
+                        names=["DB", "Indicator"],
+                        transformer=identity,
+                        min_date=to_datetime('1900-01-01'),
+                        combine_func=default_combine_func).up(). \
         set_path('analyzer', 'sp500_model.pickle', load=False). \
         create_analyzer(creator=sp_analyzer_creator).set(y_key=('YALE', "Future Percent change in S&P Composite"))
     
     return(sp_info)
     
-from systematic_investment import test_data_processing, test_models
-from systematic_investment import LongShortTradingModel
+from systematic_investment.models import LongShortTradingModel
 import statsmodels.api as sm              
  
 def sp_model_test_action(model):
@@ -87,5 +95,5 @@ def sp_model_test_action(model):
 if __name__ == '__main__':
     info = get_sp500_info()
     test_data_processing(info)
-    test_models(info, sp_model_test_action, lambda info: LongShortTradingModel(info, normals=False, constructor=sm.RLM))
+    test_models(info, sp_model_test_action, lambda info: LongShortTradingModel(info, normals=False, constructor=sm.RLM, split_date='2013-01-01'))
     print("done")
