@@ -108,11 +108,11 @@ def cc_model_test_action(model):
     model.analyzer.plot_analysis_results()
     #model.plot_hypothetical_portfolio()
     
-class MultiTaskLassoInterop:
-    def __init__(self, lm_y, lm_x):
+class SKLearnInterop:
+    def __init__(self, lm_y, lm_x, constructor):
         self._lm_x = lm_x
         self._lm_y = lm_y
-        self._obj = MultiTaskLasso()
+        self._obj = constructor()
         
     def summary(self, xname, yname):
         coefs_to_print = DataFrame(self._obj.coef_)
@@ -135,6 +135,6 @@ class MultiTaskLassoInterop:
 if __name__ == '__main__':
     info = get_cc_info()
     test_data_processing(info)
-    test_models(info, cc_model_test_action, lambda info: LongShortTradingModel(info, constructor = MultiTaskLassoInterop))
+    test_models(info, cc_model_test_action, lambda info: LongShortTradingModel(info, constructor = lambda y, x: SKLearnInterop(y, x, MultiTaskLasso)))
     print("done")
     
