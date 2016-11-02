@@ -117,9 +117,28 @@ class SKLearnInterop:
         self._obj.fit(self._lm_x, self._lm_y)
         self._obj.__setattr__('summary', self.summary)
         return(self._obj)
+        
+def models_create_func(equity_info):
+    models = {}
+    sectors = np.array(list(set(industry_table['Sector'])))
+    i = 0
+    #debug
+    crit = np.logical_or.reduce([sectors == v for v in ['Utilities', 'Consumer Goods']]) # 1 top + 1 other   
+    #crit = np.logical_and.reduce([sectors != v for v in ['None', 'Oil & Gas Drilling & Exploration']])
+    for sector in sectors[crit]:
+        i += 1
+        print("sector %s, %i out of %i" % (sector, i, np.sum(crit)))
+        equity_filter = make_equity_filter(industry=None, sector=sector)
+        filter_analyzer = create_analyzer_filterer(equity_filter)
+        analyzer_creator = lambda info: equity_analyzer_creator(info, filter_analyzer)
+        equity_info.create_analyzer(analyzer_creator).set(y_key=('YAHOO', 'Future Percent change in Adjusted Close'))
+        model = LongShortTradingModel(equity_info, split_date=equity_info._split_date, constructor = lambda y,x: SKLearnInterop(y,x, LassoLarsCV))
+        models[sector] = model
+    return(models)
 
 def get_equity_info():
     equity_info = Info(data_dir=data_dir, authtoken=david_authtoken, main_db_name='YAHOO')
+    equity_info._split_date = ['2013-01-01']
         
     equity_info.dbs.SF0. \
         set_path('downloaded_data', 'SF0-bulk-download.csv'). \
@@ -156,44 +175,34 @@ def get_equity_info():
         set_path('analyzer', 'equity_model.pickle', load=False). \
         create_analyzer(equity_analyzer_creator).set(y_key=('YAHOO', "Future Percent change in Adjusted Close"))
 
-    models = {}
-    split_date='2013-01-01'
-    sectors = np.array(list(set(industry_table['Sector'])))
-    i = 0
-    #crit = np.logical_or(sectors == 'Services', sectors == 'Financial')#for debugging purposes
-    crit = np.logical_and.reduce([sectors != v for v in ['None', 'Oil & Gas Drilling & Exploration']])
-    for sector in sectors[crit]:
-        i += 1
-        print("sector %s, %i out of %i" % (sector, i, len(sectors)))
-        equity_filter = make_equity_filter(industry=None, sector=sector)
-        filter_analyzer = create_analyzer_filterer(equity_filter)
-        analyzer_creator = lambda info: equity_analyzer_creator(info, filter_analyzer)
-        equity_info.create_analyzer(analyzer_creator).set(y_key=('YAHOO', 'Future Percent change in Adjusted Close'))
-        model = LongShortTradingModel(equity_info, split_date=split_date, constructor = lambda y,x: SKLearnInterop(y,x, LassoLarsCV))
-        models[sector] = model
-    equity_info._models = models
+    equity_info._models = models_create_func(equity_info)
         
     return(equity_info)
     
 from systematic_investment.models import LongShortTradingModel
+
+def drop_model_crit(m, thresh=0.10):
+    return(m.analyzer._obj._score > thresh)
     
-def equity_model_test_action(model):
+def equity_model_test_action(model, crit = drop_model_crit):
     #model.print_tear_sheet() Would need to download daily data to do this
+    model.print_models()
+    #model.print_analysis_results()
+    print("Dropping bad models.")
+    model.drop_bad_models(drop_model_crit)
+    model.print_models()
     model.print_analysis_results()
     #model.analyzer.plot_analysis_results()
     #model.analyzer.make_univariate_plots()
     #model.plot_historic_returns()
     model.plot_hypothetical_portfolio()
+    model.print_models()
+    return(model.summarize())
 
-lengths = None
-scores = None
-sectors = None
 d = None
 if __name__ == '__main__': 
     info = get_equity_info()
     #test_data_processing(info)
-    mm_c = lambda info: multi_model_create_info_interop(info, split_date='2013-01-01')
-    sectors, lengths, scores = test_models(info, equity_model_test_action, mm_c)
-    d = DataFrame([sectors, lengths, scores]).T
-    print(d.sort_values([1]))
+    mm_c = lambda info: multi_model_create_info_interop(info, info._split_date)
+    d = test_models(info, equity_model_test_action, mm_c)[0]
     print("done")
