@@ -23,7 +23,7 @@ __status__ = "Prototype"
 from systematic_investment.shortcuts import *
 from systematic_investment.data import *
 from utils import *
-from pandas import DataFrame, Timestamp, to_datetime
+from pandas import DataFrame, Timestamp, to_datetime, read_csv
 from numpy import log, int64
 import math
 import statsmodels as sm
@@ -120,3 +120,39 @@ def equity_transformer(df):
         df.drop('Name', inplace=True)
         df.drop_duplicates(inplace=True)
         return(df)
+        
+def create_analyzer_filterer(to_keep_func):
+    def filter_analyzer(analyzer):
+        goods = []
+        analyzer._to_analyze = analyzer._to_analyze.T
+        for col in analyzer._to_analyze:
+            goods.append(to_keep_func(col))#col.apply(to_keep_func))
+        
+        analyzer._to_analyze = analyzer._to_analyze.T
+        analyzer._to_analyze = analyzer._to_analyze.loc[goods]
+        return(analyzer)
+    return(filter_analyzer)
+    
+industry_table = read_csv("data/SF0-tickers.csv")
+    
+def make_equity_filter(industry=None, sector=None):
+    def equity_filter(col):
+        row = industry_table.loc[industry_table['Name'] == col[1]]
+        #ticker = col.name[1]
+        #row = industry_table[ticker]
+        if (industry is None or row['Industry'].iloc[0] == industry) and (sector is None or row['Sector'].iloc[0] == sector):
+            return(True)
+        else:
+            return(False)
+    return(equity_filter)
+    
+def equity_combine_func(transformed_dfs):
+    #indus = transformed_dfs["INDUSTRY"]
+    #del transformed_dfs["INDUSTRY"]
+    combined = default_combine_func(transformed_dfs)
+    combined.drop_duplicates(inplace=True)
+    #ncol = indus.loc[combined.index.map(lambda x: x[1])]['Sector']
+    #ncol.index=combined.index
+    #combined['INDUSTRY', 'Sector'] = ncol
+    #combined.drop_duplicates(inplace=True)
+    return(combined)
