@@ -26,6 +26,7 @@ from systematic_investment.models.multimodel import multi_model_create_info_inte
 import numpy as np
 from sklearn.linear_model import LassoLarsCV
 from pandas import Series, DataFrame
+from scipy.stats import ttest_1samp
     
 def equity_analyzer_creator(info, filter_func=identity):
     def func():
@@ -52,7 +53,7 @@ def industry_models_create_func(equity_info):
     industries = np.array(list(set(industry_table['Industry'])))
     i = 0
     crit = np.array([np.sum(industry_table['Industry'] == ind) > 20 for ind in industries])
-    #crit = np.array([False if i < 180 else v for i,v in enumerate(crit)]) # For debugging purposes
+    #crit = np.array([False if i < 170 else v for i,v in enumerate(crit)]) # For debugging purposes
     for industry in industries[crit]:
         try:
             i += 1
@@ -87,7 +88,7 @@ def sector_models_create_func(equity_info):
 
 def get_equity_info():
     equity_info = Info(data_dir=data_dir, authtoken=david_authtoken, main_db_name='YAHOO')
-    equity_info._split_date = ['2012-01-01', '2014-01-01']
+    equity_info._split_date = ['2013-01-01']
         
     equity_info.dbs.SF0. \
         set_path('downloaded_data', 'SF0-bulk-download.csv'). \
@@ -128,25 +129,34 @@ def get_equity_info():
         
     return(equity_info)
 
-def drop_model_crit(m, score_thresh=0.15, len_thresh=30):
+def drop_model_crit(m, score_thresh=0.3**2, len_thresh=30):
     return(m.analyzer._obj._score > score_thresh and m.analyzer._data_len > len_thresh)
     
 def equity_model_test_action(model, crit = drop_model_crit):
     #model.print_tear_sheet() Would need to download daily data to do this
+    res = Info()
+    res.initial_results = model.summarize()
     model.print_models()
-    #model.print_analysis_results()
-    
     print("Dropping bad models.")
     model.drop_bad_models(drop_model_crit)
     model.print_models()
+    res.drop_1 = model.summarize()
     
     print("Dropping models that underperformed in period 2")
-    rets = model.compute_returns_by_period()
 
     def g_crit(m):
         return(m.compute_returns_by_period()[1]>0.0)
     
+    rets = np.array([m.compute_returns_by_period()[1] for m in model._models.values()])
+    t, two_pval = ttest_1samp(rets, 0.0)
+    print("Analyzing out-of-sample returns:")
+    one_pval = two_pval / 2.0 if t > 0 else (1.0 - (two_pval / 2.0))
+    print("T-statistic: %f, one-sided p-value: %f" % (t, one_pval))
+    res.t_val = t
+    res.p_val = one_pval
+    
     model.drop_bad_models(g_crit)
+    res.drop_2 = model.summarize()
     model.print_models()
     model.print_analysis_results()
     #model.analyzer.plot_analysis_results()
@@ -154,7 +164,7 @@ def equity_model_test_action(model, crit = drop_model_crit):
     #model.plot_historic_returns()
     model.plot_hypothetical_portfolio()
     model.print_models()
-    return(model.summarize())
+    return(res)
 
 d = None
 if __name__ == '__main__': 
