@@ -21,12 +21,13 @@ __email__ = "david.adelberg@yale.edu"
 __status__ = "Prototype"
 
 from equity_definitions_aux import *
-from systematic_investment.models import Info, LongShortTradingModel, MultiModel
+from systematic_investment.models import Info, LongShortTradingModel, LongOnlyTradingModel, MultiModel
 from systematic_investment.models.multimodel import multi_model_create_info_interop
 import numpy as np
 from sklearn.linear_model import LassoLarsCV
 from pandas import Series, DataFrame
 from scipy.stats import ttest_1samp
+import pickle
     
 def equity_analyzer_creator(info, filter_func=identity):
     def func():
@@ -47,7 +48,8 @@ def equity_analyzer_creator(info, filter_func=identity):
         res.add_transformation(identity, ('CALC', 'Future Percent Change in Adjusted Close'), name=('YAHOO', 'Future Percent change in Adjusted Close'), drop_old=True)
         return(res)
     return(func)
-    
+
+lasso_positive=True
 def industry_models_create_func(equity_info):
     models = {}
     industries = np.array(list(set(industry_table['Industry'])))
@@ -60,9 +62,12 @@ def industry_models_create_func(equity_info):
             print("Industry %s, %i out of %i" % (industry, i, np.sum(crit)))
             equity_filter = make_equity_filter(industry=industry, sector=None)
             filter_analyzer = create_analyzer_filterer(equity_filter)
+            #info._desc = industry
             analyzer_creator = lambda info: equity_analyzer_creator(info, filter_analyzer)
             equity_info.create_analyzer(analyzer_creator).set(y_key=('YAHOO', 'Future Percent change in Adjusted Close'))
-            model = LongShortTradingModel(equity_info, split_date=equity_info._split_date, constructor = lambda y,x: SKLearnInterop(y,x, LassoLarsCV))
+            #LongShortTradingModel            
+            model = LongOnlyTradingModel(equity_info, split_date=equity_info._split_date,
+                                          constructor = lasso_constructor)
             models[industry] = model
         except:
             print("Not enough data for industry %s" % industry)
@@ -82,13 +87,16 @@ def sector_models_create_func(equity_info):
         filter_analyzer = create_analyzer_filterer(equity_filter)
         analyzer_creator = lambda info: equity_analyzer_creator(info, filter_analyzer)
         equity_info.create_analyzer(analyzer_creator).set(y_key=('YAHOO', 'Future Percent change in Adjusted Close'))
-        model = LongShortTradingModel(equity_info, split_date=equity_info._split_date, constructor = lambda y,x: SKLearnInterop(y,x, LassoLarsCV))
+        #LongShortTradingModel        
+        model = LongOnlyTradingModel(equity_info, split_date=equity_info._split_date,
+                                      constructor = lasso_constructor)
         models[sector] = model
     return(models)
 
 def get_equity_info():
     equity_info = Info(data_dir=data_dir, authtoken=david_authtoken, main_db_name='YAHOO')
-    equity_info._split_date = ['2013-01-01']
+    equity_info._split_date = ['2013-01-01']#['2017-01-01']
+    equity_info._all_data = False
         
     equity_info.dbs.SF0. \
         set_path('downloaded_data', 'SF0-bulk-download.csv'). \
@@ -108,7 +116,7 @@ def get_equity_info():
     
     equity_info.dbs.YAHOO. \
         symbol('yahoo_codes.csv', 'Name', 'Code'). \
-        set_path('download_and_save', 'YAHOO-data.csv'). \
+        set_path('download_and_save', 'YAHOO-data.csv', collapse='quarterly'). \
         set_path('downloaded_data', 'YAHOO-data.csv'). \
         compute_wanted_codes.set(data=load_yahoo_codes()).up(). \
         downloader().set(code_builder=identity, name_builder=identity). \
@@ -116,16 +124,21 @@ def get_equity_info():
         set_path('process', 'YAHOO_processed_data.csv',
                  compute_names=make_default_compute_names([], make_yahoo_col_handler()),
                   load=True). \
-        set(symbol_name='Security', date_name='Date')
-        
-    lasso_constructor = lambda y,x: SKLearnInterop(y,x, LassoLarsCV)
+        set(symbol_name='Security', date_name='Date'). \
+        set(resample_method = yahoo_resample_method)
     
     equity_info.set_path('combined_df', 'combined_equity_data.csv'). \
         combined_df.set(labels=['Date'], to_drop=[],names=['DB', 'Indicator'], min_date=to_datetime('2010-01-01'), transformer=equity_transformer, combine_func=equity_combine_func).up(). \
         set_path('analyzer', 'equity_model.pickle', load=False). \
         create_analyzer(equity_analyzer_creator).set(y_key=('YAHOO', "Future Percent change in Adjusted Close"))
 
-    equity_info._models = industry_models_create_func(equity_info)
+    recalc_models = True
+    ind_models_path = 'industry_models.pickle'
+    if(recalc_models):
+        equity_info._models = industry_models_create_func(equity_info)#sector_
+        pickle.dump(equity_info._models, open(ind_models_path, "wb"))
+    else:
+        equity_info._models = pickle.load(open(ind_models_path, "rb"))
         
     return(equity_info)
 
@@ -142,34 +155,39 @@ def equity_model_test_action(model, crit = drop_model_crit):
     model.print_models()
     res.drop_1 = model.summarize()
     
-    print("Dropping models that underperformed in period 2")
-
+    m_positions = model.compute_model_positions()
+    m_positions = m_positions[m_positions['Strategy position'].T != 0.0]
+    m_positions = m_positions.sort_index(axis=0)
+    m_positions.to_csv('data/positions.csv')
+    
     def g_crit(m):
         return(m.compute_returns_by_period()[1]>0.0)
     
-    rets = np.array([m.compute_returns_by_period()[1] for m in model._models.values()])
-    t, two_pval = ttest_1samp(rets, 0.0)
-    print("Analyzing out-of-sample returns:")
-    one_pval = two_pval / 2.0 if t > 0 else (1.0 - (two_pval / 2.0))
-    print("T-statistic: %f, one-sided p-value: %f" % (t, one_pval))
-    res.t_val = t
-    res.p_val = one_pval
-    
-    model.drop_bad_models(g_crit)
-    res.drop_2 = model.summarize()
-    model.print_models()
+    all_data = True
+    if(not all_data):
+        print("Dropping models that underperformed in period 2")
+        rets = np.array([m.compute_returns_by_period()[1] for m in model._models.values()])
+        t, two_pval = ttest_1samp(rets, 0.0)
+        print("Analyzing out-of-sample returns:")
+        one_pval = two_pval / 2.0 if t > 0 else (1.0 - (two_pval / 2.0))
+        print("T-statistic: %f, one-sided p-value: %f" % (t, one_pval))
+        res.t_val = t
+        res.p_val = one_pval
+        model.drop_bad_models(g_crit)
+        res.drop_2 = model.summarize()
+        model.print_models()
     model.print_analysis_results()
-    #model.analyzer.plot_analysis_results()
+    #model.analyzer.analysis_results()
     #model.analyzer.make_univariate_plots()
     #model.plot_historic_returns()
-    model.plot_hypothetical_portfolio()
+   # model.plot_hypothetical_portfolio()
     model.print_models()
     return(res)
 
 d = None
 if __name__ == '__main__': 
     info = get_equity_info()
-    #test_data_processing(info)
+ #   test_data_processing(info)
     mm_c = lambda info: multi_model_create_info_interop(info, info._split_date)
     d = test_models(info, equity_model_test_action, mm_c)[0]
     print("done")
